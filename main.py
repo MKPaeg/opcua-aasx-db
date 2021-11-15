@@ -21,14 +21,5 @@ if __name__ == '__main__':
     db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', table_dict=table_dict)
     db.connect()
     
-    db.create_table()  
-    exit()
-    # while True:
-    #     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    #     value = cl.get_value("Random")
-        
-        
-    #     sql = "INSERT INTO random VALUES (%s, %s)"   # 걍 정수든, 실수든, 문자열이든 다 %s로 지정
-    #     val = (now, value)
-    #     db.execute_sql(sql,val)
-    #     sleep(1)
+    db.create_table()
+    print(f"Finished to create table")

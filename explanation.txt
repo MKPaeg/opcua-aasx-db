@@ -1,0 +1,10 @@
+'''
+향후 readme로 업데이트 할 것
+
+initialization.json
+    "RGBIMAGE": ["RGB_WIDTH", "RGB_HEIGHT", "RGB_CHANNEL"]에서 "RGBIMAGE"가 테이블명
+    뒤에따라오는 리스트가 각 COLUMN들이 될 예정임
+
+
+아놔.. sql문은 따로 json으로 정리를 못하나봐..
+'''

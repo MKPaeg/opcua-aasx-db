@@ -1,6 +1,8 @@
 from client import OPCUA_client
 from mariadb import MariaDB
 from time import sleep
+import sys
+import os
 import time
 
 def json_load():

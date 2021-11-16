@@ -121,7 +121,8 @@ if __name__ =="__main__":
             _, predicted = torch.max(output, 1)
             pred = np.squeeze(predicted.cpu().numpy())
             print(f"predicted :{pred}, Ground Truth :{label}")
-            db.insert_predicted(pred)
+            # db.insert_predicted(pred)
+            db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=pred)
             print(f"Saved to RESULT table")
 
 

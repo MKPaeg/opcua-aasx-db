@@ -18,6 +18,7 @@ class OPCUA_client:
         print("Information of OPCUA-Server node")
         # print(client.get_node('ns=3'))
         # exit()
+        
         for table_name, columns_name in table_dict.items():
             print(f'table_name: {table_name}')
             for column in columns_name:

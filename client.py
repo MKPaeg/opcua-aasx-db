@@ -15,17 +15,16 @@ class OPCUA_client:
         print(f"IP: {IP}")
         
         # root = client.get_root_node()
-        print("Information of OPCUA-Server node")
+        # print("Information of OPCUA-Server node")
         # print(client.get_node('ns=3'))
-        # exit()
         
-        for table_name, columns_name in table_dict.items():
-            print(f'table_name: {table_name}')
-            for column in columns_name:
-                print('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column)
-                print(client.get_node('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column + '.Value').get_value())
-                # node = client.get_node('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column)
-                print()
+        # for table_name, columns_name in table_dict.items():
+        #     print(f'table_name: {table_name}')
+        #     for column in columns_name:
+        #         print('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column)
+        #         print(client.get_node('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column + '.Value').get_value())
+        #         # node = client.get_node('ns=3;' + 's=AASROOT.DATA.DB_TABLE.' + table_name + '.' + column)
+        #         print()
         
         # objects = client.get_objects_node()        
         # AASROOT = objects.get_child("AASROOT")

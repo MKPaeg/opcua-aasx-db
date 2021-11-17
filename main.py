@@ -126,18 +126,18 @@ if __name__ == '__main__':
     # 입력받을 인자값 등록
     parser.add_argument('--refresh', required=False, default=False, action='store_true', help="Choose whether refresh or net")
     parser.add_argument('--predict', required=False, default=False, action='store_true', help="Predict and insert to mariaDB")
+    parser.add_argument('--table_list', required=True, nargs='+', type=str, help="Choose table to use / TGBIMAGE, DEPTHIMAGE, HSIIMAGE, RESULT")
     
     args = parser.parse_args()
     
     table_dict = json_load()
 
-    print(args.predict)
-
+    print(f"Chosen table list => {args.table_list}")
     # cl = OPCUA_client("opc.tcp://localhost:53530/OPCUA/SimulationServer")
     cl = OPCUA_client("opc.tcp://localhost:51210/UA/SampleServer", table_dict['db_info'])
     # cl.connect()
     
-    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', table_dict=table_dict)
+    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', table_dict=table_dict, args = args)
     db.connect()
     
     if args.refresh:

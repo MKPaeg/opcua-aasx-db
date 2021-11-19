@@ -20,15 +20,6 @@ from time import sleep
 import time
 from utils.io_preprocess import preprocess_swir
 from utils.mobilenet import MobileNet
-# from utils.volumerender_sim import  volumerender_sim
-
-def json_load():
-    import json
-    
-    with open('./initialization.json', 'r', encoding='utf-8') as json_data:
-        table_dict = json.load(json_data)
-    
-    return table_dict
 
 def make_data_path(train_path):
     file = glob.glob(train_path + "\*.raw")
@@ -133,18 +124,17 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    table_dict = json_load()
-    
     if args.table_list == None:     # if table_list empty
         args.table_list = ['RGBIMAGE', 'DEPTHIMAGE', 'HSIIMAGE', 'RESULT']
     
     print(f"Chosen table list => {args.table_list}")
     
     # cl = OPCUA_client("opc.tcp://localhost:53530/OPCUA/SimulationServer")
-    cl = OPCUA_client("opc.tcp://localhost:51210/UA/SampleServer", table_dict['db_info'])
-    # cl.connect()
+    cl = OPCUA_client("opc.tcp://localhost:51210/UA/SampleServer")
     
-    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', table_dict=table_dict, args = args)
+    db_schema = cl.get_db_schema()            
+    
+    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', db_schema=db_schema, args = args)
     db.connect()
     
     if args.refresh:

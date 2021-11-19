@@ -1,14 +1,14 @@
 import pymysql
 
 class MariaDB:
-    def __init__(self, host, port, user, password, db, table_dict, args):
+    def __init__(self, host, port, user, password, db, db_schema, args):
         # Declare global variable
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.db = db
-        self.table_dict = table_dict
+        self.db_schema = db_schema
         self.args = args
         
     def connect(self):
@@ -24,7 +24,7 @@ class MariaDB:
         value_type_sql = "DECIMAL(10,2)"
         temp_sql = f""
         
-        for table_name, column_names in self.table_dict['db_info'].items():
+        for table_name, column_names in self.db_schema.items():
             if table_name not in self.args.table_list:
                 continue
             
@@ -37,7 +37,7 @@ class MariaDB:
             self.execute_sql(sql)
         
     def delete_table(self):
-        for table_name, column_names in self.table_dict['db_info'].items():
+        for table_name, column_names in self.db_schema.items():
             if table_name not in self.args.table_list:
                 continue
             

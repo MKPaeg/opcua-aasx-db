@@ -95,6 +95,9 @@ def predict():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     PATH = os.path.join(model_path, f"tomato_ripeness_{epoch}_" + ".pt")
+    
+    model = MobileNet().to(device)
+    model.eval()
 
     with torch.no_grad():
          test_dataloader = Sup_Img_Dataset(file, ImageTransform())

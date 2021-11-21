@@ -17,7 +17,7 @@ def get_aasx_db_schema(client:Client, name_space:str): # 이 함수를 재귀적
             
         return property_list
     
-    def create_schema_dict(property_list:list):
+    def create_schema_dict(property_list:list):     
         schema_dict = {}
         print(f"property list -> {property_list}")
         for property in property_list:
@@ -28,7 +28,7 @@ def get_aasx_db_schema(client:Client, name_space:str): # 이 함수를 재귀적
         print(schema_dict)
         return schema_dict
         
-    DB_TABLE = client.get_node(name_space)
+    DB_TABLE = client.get_node(name_space)      # OPCUA 서버에서 DB_TABLE 노드 객체를 가져옴
     tp_list = DB_TABLE.get_children(refs=47)  # choose node that has property
     tp_list = list(set(tp_list))    # delete duplicated
     table_list = [node for node in tp_list if node.get_display_name().Text != "SemanticId" and node.get_display_name().Text != "Identification"]
@@ -36,22 +36,20 @@ def get_aasx_db_schema(client:Client, name_space:str): # 이 함수를 재귀적
     property_list = get_property_schema(table_list)
     schema_dict = create_schema_dict(property_list)
     
-    return schema_dict
+    return schema_dict      # 완성된 DB 스키마 정보 반환
     
 class OPCUA_client:
-    
-    # I don't use with statement to use method with opcua server communication
     def __init__(self, IP:str):
         # self.table_list = table_dict
-        client = Client(IP)
-        client.connect()
+        client = Client(IP)     
+        client.connect()        # 넘어온 IP 주소로 연결
         
-        BaseNameSpace = "ns=3;s=AASROOT.DATA.DB_TABLE"
+        BaseNameSpace = "ns=3;s=AASROOT.DATA.DB_TABLE"      # aasx파일이 DATA(AAS) -> DB_TABLE(SM)으로 이루어져 있고 그 하위에 테이블이 존재하며 테이블 하위에 컬럼들이 존재하는 구조로 구성해야함
         
         print("\nConnection Success..")
         print(f"IP: {IP}")
         
-        db_schema = get_aasx_db_schema(client, BaseNameSpace)
+        db_schema = get_aasx_db_schema(client, BaseNameSpace)       # OPCUA 서버에 올라와있는 AASX 파일을 조회하여 Maria DB에 적용시킬 DB 스키마를 추출함
     
         self.db_schema = db_schema
     

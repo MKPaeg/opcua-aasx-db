@@ -134,7 +134,7 @@ if __name__ == '__main__':
     
     db_schema = cl.get_db_schema()            
     
-    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', db_schema=db_schema, args = args)
+    db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', db_schema=db_schema, args = args)       # MariaDB 연결
     db.connect()
     
     if args.refresh:
@@ -146,9 +146,9 @@ if __name__ == '__main__':
         
     print(f"Finished to create table")
     
-    if args.predict:
+    if args.predict:            
         print(f"Start predict..")
-        predict()    
+        predict()           # predict 함수 실행하여 실시간 inference 및 DB에 값 저장 진행
     
     else:
         exit()

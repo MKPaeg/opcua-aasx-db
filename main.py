@@ -120,19 +120,19 @@ if __name__ == '__main__':
     # 입력받을 인자값 등록
     parser.add_argument('--refresh', required=False, default=False, action='store_true', help="Choose whether refresh or net")
     parser.add_argument('--predict', required=False, default=False, action='store_true', help="Predict and insert to mariaDB")
-    parser.add_argument('--table_list', required=False, nargs='+', type=str, help="Choose table to use / TGBIMAGE, DEPTHIMAGE, HSIIMAGE, RESULT")
+    parser.add_argument('--table_list', required=False, nargs='+', type=str, help="Choose table to use / RGBIMAGE, DEPTHIMAGE, HSIIMAGE, RESULT")
     
     args = parser.parse_args()
-    
-    if args.table_list == None:     # if table_list empty
-        args.table_list = ['RGBIMAGE', 'DEPTHIMAGE', 'HSIIMAGE', 'RESULT']
-    
-    print(f"Chosen table list => {args.table_list}")
     
     # cl = OPCUA_client("opc.tcp://localhost:53530/OPCUA/SimulationServer")
     cl = OPCUA_client("opc.tcp://localhost:51210/UA/SampleServer")
     
     db_schema = cl.get_db_schema()            
+    
+    if args.table_list == None:     # if table_list empty
+        args.table_list = list(db_schema.keys())
+    
+    print(f"Chosen table list => {args.table_list}")
     
     db = MariaDB(host='127.0.0.1', port=3306, user='root', password='13130132', db='opcua', db_schema=db_schema, args = args)       # MariaDB 연결
     db.connect()
@@ -143,12 +143,11 @@ if __name__ == '__main__':
         
     else:
         db.create_table()
-        
-    print(f"Finished to create table")
     
     if args.predict:            
         print(f"Start predict..")
         predict()           # predict 함수 실행하여 실시간 inference 및 DB에 값 저장 진행
-    
-    else:
-        exit()
+        
+    db.close()
+    cl.close()
+    print(f"Server closed..")

@@ -19,7 +19,7 @@ def get_aasx_db_schema(client:Client, name_space:str): # 이 함수를 재귀적
     
     def create_schema_dict(property_list:list):     
         schema_dict = {}
-        print(f"property list -> {property_list}")
+        # print(f"property list -> {property_list}")
         for property in property_list:
             table_name = property[0].get_parent().get_display_name().Text  # Every property has the same parents in the lists.
             tp = [_pro_perty.get_display_name().Text for _pro_perty in property]
@@ -40,21 +40,25 @@ def get_aasx_db_schema(client:Client, name_space:str): # 이 함수를 재귀적
     
 class OPCUA_client:
     def __init__(self, IP:str):
-        # self.table_list = table_dict
-        client = Client(IP)     
-        client.connect()        # 넘어온 IP 주소로 연결
+        self.client = Client(IP)
+        self.client.connect()
+        # client = Client(IP)     
+        # client.connect()        # 넘어온 IP 주소로 연결
+        # client.close_session()
         
         BaseNameSpace = "ns=3;s=AASROOT.DATA.DB_TABLE"      # aasx파일이 DATA(AAS) -> DB_TABLE(SM)으로 이루어져 있고 그 하위에 테이블이 존재하며 테이블 하위에 컬럼들이 존재하는 구조로 구성해야함
         
         print("\nConnection Success..")
         print(f"IP: {IP}")
         
-        db_schema = get_aasx_db_schema(client, BaseNameSpace)       # OPCUA 서버에 올라와있는 AASX 파일을 조회하여 Maria DB에 적용시킬 DB 스키마를 추출함
-    
+        db_schema = get_aasx_db_schema(self.client, BaseNameSpace)       # OPCUA 서버에 올라와있는 AASX 파일을 조회하여 Maria DB에 적용시킬 DB 스키마를 추출함
         self.db_schema = db_schema
     
     def get_db_schema(self):
         return self.db_schema
+
+    def close(self):
+        self.client.close_session()
 
 if __name__ == '__main__':
     cl = OPCUA_client("opc.tcp://localhost:51210/UA/SampleServer")

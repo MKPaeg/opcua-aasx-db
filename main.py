@@ -100,7 +100,7 @@ def predict():
 
             model = MobileNet().to(device)
             input_expands_tensor = transformed_img.unsqueeze(0) #[ch x with x height]-> [1 xch x with x height]
-            model(input_expands_tensor.cuda())
+            # model(input_expands_tensor.cuda())
 
             checkpoint = torch.load(PATH)
             model.load_state_dict(checkpoint["model_state_dict"])

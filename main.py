@@ -76,8 +76,8 @@ def load_swir(path):
     img_transformed = ImageTransform(img_resize)
     return img_transformed
 
-def predict():
-    train_path = "C:/Users/hojun_window/Desktop/Work/오즈레이AAS/_tomato"
+def predict(args):
+    train_path = "D:/Work/오즈레이AAS/_tomato"
     file = glob.glob(train_path + "/**/*.raw", recursive=True)
     # print(file)
     test_num = 78
@@ -89,6 +89,8 @@ def predict():
     
     model = MobileNet().to(device)
     model.eval()
+
+    
 
     with torch.no_grad():
          test_dataloader = Sup_Img_Dataset(file, ImageTransform())
@@ -104,6 +106,10 @@ def predict():
 
             checkpoint = torch.load(PATH)
             model.load_state_dict(checkpoint["model_state_dict"])
+
+            if args.onnx:
+                if not os.path.isfile(model_path + '/weight.onnx'): # onnx 파일이 없을 시 생성
+                    pass
 
             output = model(input_expands_tensor.cuda())
             _, predicted = torch.max(output, 1)
@@ -121,6 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--refresh', required=False, default=False, action='store_true', help="Choose whether refresh or net")
     parser.add_argument('--predict', required=False, default=False, action='store_true', help="Predict and insert to mariaDB")
     parser.add_argument('--table_list', required=False, nargs='+', type=str, help="Choose table to use / RGBIMAGE, DEPTHIMAGE, HSIIMAGE, RESULT")
+    parser.add_argument('--onnx', required=False, default=False, action='store_true', help="Choose whether use onnx or not")
     
     args = parser.parse_args()
     
@@ -146,7 +153,7 @@ if __name__ == '__main__':
     
     if args.predict:            
         print(f"Start predict..")
-        predict()           # predict 함수 실행하여 실시간 inference 및 DB에 값 저장 진행
+        predict(args)           # predict 함수 실행하여 실시간 inference 및 DB에 값 저장 진행
         
     db.close()
     cl.close()

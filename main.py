@@ -20,6 +20,8 @@ from time import sleep
 import time
 from utils.io_preprocess import preprocess_swir
 from utils.mobilenet import MobileNet
+import onnx
+import onnxruntime
 
 def make_data_path(train_path):
     file = glob.glob(train_path + "\*.raw")
@@ -32,8 +34,7 @@ def make_data_path(train_path):
         train_label.append(img_label)
 
     return train_img_list, train_label
-
-
+    
 class ImageTransform():
 
     def __init__(self):
@@ -76,48 +77,84 @@ def load_swir(path):
     img_transformed = ImageTransform(img_resize)
     return img_transformed
 
+def to_numpy(tensor):
+    return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
+
 def predict(args):
     train_path = "D:/Work/오즈레이AAS/_tomato"
     file = glob.glob(train_path + "/**/*.raw", recursive=True)
-    # print(file)
+    print(f"Total test length: {len(file)}")
+
     test_num = 78
     model_path = "./model_v3"
-    epoch = 30
-
+    epoch = 30 
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     PATH = os.path.join(model_path, f"tomato_ripeness_{epoch}_" + ".pt")
-    
-    model = MobileNet().to(device)
-    model.eval()
-
-    
 
     with torch.no_grad():
-         test_dataloader = Sup_Img_Dataset(file, ImageTransform())
-         
-         print(f"Total test length: {len(file)}")
-         for num in range(len(file)):
+        test_dataloader = Sup_Img_Dataset(file, ImageTransform())
+        model = MobileNet().to(device)
+        checkpoint = torch.load(PATH)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.eval()
+
+        if args.onnx :
+            if not os.path.isfile(model_path + '/weight.onnx'):
+                x = torch.randn(1, 256, 256, 256, requires_grad=True).cuda() # 배치사이즈는 1로 생각
+                torch_out = model(x)
+                torch.onnx.export(
+                    model,               # 실행될 모델
+                    x,                         # 모델 입력값 (튜플 또는 여러 입력값들도 가능, 또한 랜덤이여도 상관 없음)
+                    "weight.onnx",   # 모델 저장 경로 (파일 또는 파일과 유사한 객체 모두 가능)
+                    export_params=True,        # 모델 파일 안에 학습된 모델 가중치를 저장할지의 여부
+                    opset_version=10,          # 모델을 변환할 때 사용할 ONNX 버전
+                    do_constant_folding=True,  # 최적하시 상수폴딩을 사용할지의 여부
+                    input_names = ['input'],   # 모델의 입력값을 가리키는 이름
+                    output_names = ['output'], # 모델의 출력값을 가리키는 이름
+                    dynamic_axes={
+                        'input' : {0 : 'batch_size'},    # 가변적인 길이를 가진 차원
+                        'output' : {0 : 'batch_size'}})
+        
+            ort_session = onnxruntime.InferenceSession("weight.onnx")
+
+        # ONNX 런타임에서 계산된 결과값
+        # 여기 코드가 핵심임. 실질적으로 onnx 모델을 통한 inference가 이루어지는 부분
+        # ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(input_expands_tensor.cuda())}
+        # ort_outs = ort_session.run(None, ort_inputs)[0]        # 이게 그냥 pytorch 모델의 인자에 값 넣는것과 같음
+        # np.testing.assert_allclose(to_numpy(torch_out), ort_outs[0], rtol=1e-03, atol=1e-05)
+        # print("Exported model has been tested with ONNXRuntime, and the result looks good!")
+
+        for num in range(len(file)):
             transformed_img, label = test_dataloader[num]
             # volr.volumerender_sim(transformed_img.numpy(), 256, 256, 256)
 
-            model = MobileNet().to(device)
             input_expands_tensor = transformed_img.unsqueeze(0) #[ch x with x height]-> [1 xch x with x height]
             # model(input_expands_tensor.cuda())
 
-            checkpoint = torch.load(PATH)
-            model.load_state_dict(checkpoint["model_state_dict"])
-
             if args.onnx:
-                if not os.path.isfile(model_path + '/weight.onnx'): # onnx 파일이 없을 시 생성
-                    pass
+                # ONNX 런타임에서 계산된 결과값
+                # 여기 코드가 핵심임. 실질적으로 onnx 모델을 통한 inference가 이루어지는 부분
 
-            output = model(input_expands_tensor.cuda())
-            _, predicted = torch.max(output, 1)
-            pred = np.squeeze(predicted.cpu().numpy())
-            print(f"predicted :{pred}, Ground Truth :{label}")
-            # db.insert_predicted(pred)
-            db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=pred)
-            print(f"Saved to RESULT table")
+                ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(input_expands_tensor.cuda())}
+                ort_outs = ort_session.run(None, ort_inputs)[0]        # 이게 그냥 pytorch 모델의 인자에 값 넣는것과 같음
+                # print(f"ort_outs type: {type(ort_outs)} \n ort_outs: {ort_outs}")
+                predicted = np.argmax(ort_outs)
+                # _, predicted = torch.max(ort_outs, 1)
+                # pred = np.squeeze(predicted.cpu().numpy())
+                print(f"####### ONNX Inference ###### \n predicted :{predicted}, Ground Truth :{label}")
+                # db.insert_predicted(pred)
+                db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=predicted)
+                print(f"Saved to RESULT table")
+
+            else: # onnx로 추론하는것이 아니라면
+                output = model(input_expands_tensor.cuda())
+                _, predicted = torch.max(output, 1)
+                pred = np.squeeze(predicted.cpu().numpy())
+                print(f"predicted :{pred}, Ground Truth :{label}")
+                # db.insert_predicted(pred)
+                db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=pred)
+                print(f"Saved to RESULT table")
     
 if __name__ == '__main__':
     # 인자값 받을 수 있는 인스턴스 생성

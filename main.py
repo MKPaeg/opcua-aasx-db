@@ -116,7 +116,23 @@ def predict(args):
                         'input' : {0 : 'batch_size'},    # 가변적인 길이를 가진 차원
                         'output' : {0 : 'batch_size'}})
         
-            ort_session = onnxruntime.InferenceSession("weight.onnx")
+            # ort_session = onnxruntime.InferenceSession("weight.onnx", providers=['CUDAExecutionProvider'])
+            providers = [
+                ('TensorrtExecutionProvider', {
+                    'device_id': 0,
+                    'trt_max_workspace_size': 2147483648,
+                    'trt_fp16_enable': True,
+                    }),
+                    ('CUDAExecutionProvider', {
+                        'device_id': 0,
+                        'arena_extend_strategy': 'kNextPowerOfTwo',
+                        'gpu_mem_limit': 2 * 1024 * 1024 * 1024,
+                        'cudnn_conv_algo_search': 'EXHAUSTIVE',
+                        'do_copy_in_default_stream': True,
+                        })
+                        ]
+            # ort_session = onnxruntime.InferenceSession("weight.onnx", providers=['TensorrtExecutionProvider', 'CUDAExecutionProvider'])
+            ort_session = onnxruntime.InferenceSession("weight.onnx", providers=['TensorrtExecutionProvider', 'CUDAExecutionProvider'])
 
         # ONNX 런타임에서 계산된 결과값
         # 여기 코드가 핵심임. 실질적으로 onnx 모델을 통한 inference가 이루어지는 부분
@@ -135,9 +151,10 @@ def predict(args):
             if args.onnx:
                 # ONNX 런타임에서 계산된 결과값
                 # 여기 코드가 핵심임. 실질적으로 onnx 모델을 통한 inference가 이루어지는 부분
-
                 ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(input_expands_tensor.cuda())}
+                t1 = time.time()
                 ort_outs = ort_session.run(None, ort_inputs)[0]        # 이게 그냥 pytorch 모델의 인자에 값 넣는것과 같음
+                t2 = time.time()
                 # print(f"ort_outs type: {type(ort_outs)} \n ort_outs: {ort_outs}")
                 predicted = np.argmax(ort_outs)
                 # _, predicted = torch.max(ort_outs, 1)
@@ -145,16 +162,19 @@ def predict(args):
                 print(f"####### ONNX Inference ###### \n predicted :{predicted}, Ground Truth :{label}")
                 # db.insert_predicted(pred)
                 db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=predicted)
-                print(f"Saved to RESULT table")
+                
+                print(f"Saved to RESULT table,  Inferenced time: {t2 - t1}")
 
             else: # onnx로 추론하는것이 아니라면
+                t1 = time.time()
                 output = model(input_expands_tensor.cuda())
+                t2 = time.time()
                 _, predicted = torch.max(output, 1)
                 pred = np.squeeze(predicted.cpu().numpy())
                 print(f"predicted :{pred}, Ground Truth :{label}")
                 # db.insert_predicted(pred)
                 db.insert_value(table_name="RESULT", column_name="RESULT_TOMATO_RIPENESS", val=pred)
-                print(f"Saved to RESULT table")
+                print(f"Saved to RESULT table, Inferenced time: {t2 - t1}")
     
 if __name__ == '__main__':
     # 인자값 받을 수 있는 인스턴스 생성
